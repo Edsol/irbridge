@@ -1,5 +1,6 @@
 # IRBridge
 
+[![Validate](https://github.com/Edsol/irbridge/actions/workflows/validate.yaml/badge.svg)](https://github.com/Edsol/irbridge/actions/workflows/validate.yaml)
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 [![GitHub release](https://img.shields.io/github/v/release/Edsol/irbridge?include_prereleases&sort=semver)](https://github.com/Edsol/irbridge/releases)
 [![License](https://img.shields.io/github/license/Edsol/irbridge)](LICENSE)
