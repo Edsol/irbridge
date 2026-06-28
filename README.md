@@ -1,5 +1,10 @@
 # IRBridge
 
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
+[![GitHub release](https://img.shields.io/github/v/release/Edsol/irbridge?include_prereleases&sort=semver)](https://github.com/Edsol/irbridge/releases)
+[![License](https://img.shields.io/github/license/Edsol/irbridge)](LICENSE)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-custom%20integration-41BDF5.svg?logo=home-assistant&logoColor=white)](https://www.home-assistant.io/)
+
 A Home Assistant custom integration that generates IR codes on-the-fly for climate devices, without relying on pre-recorded code databases.
 
 ## How it works
@@ -36,10 +41,39 @@ No cloud, no database, no pre-recorded codes.
 
 ## Installation
 
-1. Copy `custom_components/irbridge` into your HA `custom_components/` directory.
-2. Restart Home Assistant.
-3. Go to **Settings → Devices & Services → Add Integration → IRBridge**.
-4. Select protocol, sender, and your IR blaster entity.
+### Via HACS (recommended)
+
+IRBridge is not yet in the default HACS store, so it must be added as a custom repository.
+
+**One-click:** click the button below to open the custom-repository dialog in your Home Assistant directly:
+
+[![Open your Home Assistant instance and add a HACS custom repository.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Edsol&repository=irbridge&category=integration)
+
+**Manual:**
+
+1. Open **HACS** in Home Assistant.
+2. Click the **⋮** menu (top right) → **Custom repositories**.
+3. Add the URL `https://github.com/Edsol/irbridge`, category **Integration**, then **Add**.
+4. Search for **IRBridge** in HACS and click **Download**.
+5. **Restart Home Assistant.**
+
+### Manual installation (without HACS)
+
+1. Copy the `custom_components/irbridge` folder from this repo into your HA `config/custom_components/` directory:
+   ```
+   config/custom_components/irbridge/
+   ```
+2. **Restart Home Assistant.**
+
+### Add the integration
+
+After installing (either method) and restarting:
+
+1. Go to **Settings → Devices & Services → Add Integration**.
+2. Search for **IRBridge**.
+3. Select protocol, sender, and your IR blaster entity.
+
+[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=irbridge)
 
 ## Configuration
 
