@@ -21,6 +21,8 @@ jobs:
         uses: hacs/action@main
         with:
           category: integration
+          # Remove once the brands PR (home-assistant/brands) is merged.
+          ignore: brands
 
   hassfest:
     name: Hassfest
