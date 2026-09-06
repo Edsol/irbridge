@@ -63,6 +63,17 @@ on the air conditioner itself through this integration: modes, temperatures,
 fan speeds, swing and power off all behave as generated.
 See [the Gree findings](docs/protocol_gree.md).
 
+### Choosing the right protocol
+
+The setup sends a real command — cooling at 22 °C — and asks whether the air
+conditioner responded. If it did not, you go straight back to the picker and
+try another protocol, with nothing saved in between.
+
+This matters because a brand name does not identify a protocol. The device
+this integration was first built against is sold as Midea and turned out to
+speak Gree. Reconfiguring an existing device runs the same check, so a wrong
+guess never replaces a setup that already works.
+
 ### Switching the previously labelled Midea device to Gree
 
 After installing this update and restarting Home Assistant, open

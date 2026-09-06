@@ -3,13 +3,24 @@
     "step": {
       "user": {
         "title": "IRBridge",
-        "description": "Generate IR codes on-the-fly for your climate device.",
+        "description": "Generate IR codes on-the-fly for your climate device. Pick a protocol; the next step sends a test command so you can check it before saving.",
         "data": {
           "title": "Name",
           "protocol": "Protocol",
           "infrared_entity_id": "IR emitter"
         }
+      },
+      "test": {
+        "title": "Did it work?",
+        "description": "Sent **{protocol} · cool · {temp} °C** to your air conditioner.\n\nIf it turned on and shows {temp} °C, the protocol is right. If nothing happened, clear the box below and try another one — brand names are a poor guide, and a unit sold under one brand often speaks another protocol.",
+        "data": {
+          "worked": "The air conditioner responded"
+        }
       }
+    },
+    "error": {
+      "test_failed": "No response from the air conditioner. Try a different protocol, or check that the blaster can reach the unit.",
+      "send_failed": "Could not send the test: {error}"
     },
     "abort": {
       "infrared_unavailable": "This Home Assistant version has no infrared platform. IRBridge requires Home Assistant 2026.7 or newer."
@@ -19,11 +30,23 @@
     "step": {
       "init": {
         "title": "IRBridge",
+        "description": "The next step sends a test command, so a protocol change is checked before it replaces your current setup.",
         "data": {
           "protocol": "Protocol",
           "infrared_entity_id": "IR emitter"
         }
+      },
+      "test": {
+        "title": "Did it work?",
+        "description": "Sent **{protocol} · cool · {temp} °C** to your air conditioner.\n\nIf it responded, confirm below to save. If nothing happened, clear the box and pick another protocol — your current settings stay untouched until you confirm.",
+        "data": {
+          "worked": "The air conditioner responded"
+        }
       }
+    },
+    "error": {
+      "test_failed": "No response from the air conditioner. Try a different protocol, or check that the blaster can reach the unit.",
+      "send_failed": "Could not send the test: {error}"
     }
   }
 }

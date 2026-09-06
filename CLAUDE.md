@@ -26,15 +26,31 @@ Three steps only:
 | `generators/base.py` | `ClimateGenerator` ABC and `ClimateCapabilities` dataclass |
 | `generators/__init__.py` | Registry — single source of truth for available protocols |
 | `senders/base.py` | `IRSender` ABC — implement to add new transmission backends |
-| `config_flow.py` | Setup wizard + options flow (protocol, sender, blaster entity) |
+| `config_flow.py` | Setup wizard + options flow (protocol, emitter, test step) |
 
 ### Sender abstraction
 
-`IRSender.async_send_raw(raw: list[int])` is the only method. Adding a new sender (Broadlink, ESPHome, etc.) requires only implementing this method and registering it in `config_flow.py`.
+`IRSender.async_send_raw(raw: list[int])` is the only method. There is a single
+sender: `InfraredEntitySender`, which hands the command to HA's native
+`infrared` platform. That platform already covers ESPHome, Broadlink, Tuya
+Local, SMLIGHT and MQTT, so a new backend is HA's job rather than this
+integration's.
+
+### Test step
+
+Both flows send one real command (`cool`, 22 °C) before saving, then ask
+whether the unit responded. Answering no returns to the picker with the
+values kept. This exists because brand names do not identify protocols — the
+device this integration was built against is sold as Midea and speaks Gree.
+`TEST_HVAC_MODE` and `TEST_TEMP` in `config_flow.py` must stay legal for every
+registered protocol; `tests/test_config_flow.py` enforces that.
 
 ### Options flow
 
-Changing protocol/sender in the options flow triggers `_async_update_listener` which reloads the config entry — new capabilities (fan modes, swing, temp range) take effect immediately.
+Changing protocol/emitter goes through the same test step, and the entry is
+only rewritten once the user confirms — a wrong guess never replaces a working
+setup. On confirmation `_async_update_listener` reloads the entry, so new
+capabilities (fan modes, swing, temp range) take effect immediately.
 
 ## Development setup
 
@@ -55,12 +71,16 @@ Or `docker compose up -d` if docker-compose.yaml was changed.
 
 ## Verified protocols
 
+### Gree (`gree`)
+- The device formerly stored as `midea_camera`: sold as Midea, speaks Gree
+- Fan: auto/low/mid/high — Swing: vertical — 16-30 °C
+- Verified on the unit through this integration: modes, temperatures, fan
+  speeds, swing and power off
+
 ### Midea (`midea`)
-- Devices: Ferroli, Midea
-- Reverse-engineered via sweep acquisition in ir-lab
-- Power on/off: fixed byte sequences (verified against acquired samples)
-- Fan speed: not yet mapped (requires tagged sweep)
-- Swing: not yet acquired
+- Legacy encoder kept for entries created before the Gree identification
+- Fan speed never mapped (only "auto" exposed); swing never acquired
+- Not an alias for Gree, and not a claim of upstream Midea support
 
 ### Electra (`electra`)
 - Devices: Beko (YKR-H/102E), AUX, Electrolux, Frigidaire
@@ -72,10 +92,9 @@ Or `docker compose up -d` if docker-compose.yaml was changed.
 
 ## Current limitations
 
-- Midea fan speed not mapped (only "auto" exposed)
-- Midea swing not acquired
-- `infrared_entity` sender is a placeholder (HA InfraredEmitterEntity API not yet stable)
+- `midea` remains a legacy encoder: fan speed unmapped, swing unacquired
 - Tuya Cloud fallback not yet integrated
+- Requires HA 2026.7+, and Zigbee2MQTT 2.13.0+ for Tuya/Zosung blasters
 
 ## Remote entity
 
@@ -93,5 +112,6 @@ The `extra_state_attributes` exposes `supported_commands` — a full list of val
 
 - Hardcode IR codes in `climate.py` — they belong in the generator
 - Add protocol-specific logic to `climate.py` — it must stay protocol-agnostic
-- Modify `climate.py` or `config_flow.py` when adding a new protocol
+- Modify `climate.py` or `config_flow.py` when adding a new protocol — but do
+  check the new protocol accepts the test state (`cool`, 22 °C)
 - Insert user-provided Tuya base64 strings anywhere in the codebase
