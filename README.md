@@ -52,15 +52,16 @@ new message immediately; no learning session is needed.
 
 | Protocol | Devices | Temp | Fan | Swing | Power off |
 |----------|---------|------|-----|-------|-----------|
-| `gree` | Tested device formerly labelled `midea_camera` | 16–30°C | auto/low/mid/high | vertical | implemented, unverified |
+| `gree` | Tested device formerly labelled `midea_camera` | 16–30°C | auto/low/mid/high | vertical | ✓ |
 | `midea` | Legacy encoder; historical state mapping | 16–30°C | auto | — | legacy |
 | `electra` | Beko, AUX, Electrolux, Frigidaire | 16–32°C | auto/high/mid/low | vertical | ✓ |
 
 Brand names identify protocol families, not a guarantee that every model from
 that brand is compatible. Gree cool at 24 C, high fan and automatic vertical
-swing were verified through the lab's MQTT blaster. Low fan was reported as
-probable; other implemented states still require device checks. These tests
-verify the generated IR payload, not an end-to-end Home Assistant installation.
+swing were verified through the lab's MQTT blaster, which checks the generated
+IR payload rather than a full Home Assistant round trip. Power off was since
+confirmed on the unit itself, through this integration. Low fan was reported as
+probable; other implemented states still require device checks.
 See [the Gree findings](docs/protocol_gree.md).
 
 ### Switching the previously labelled Midea device to Gree
@@ -250,7 +251,7 @@ IRBridge is developed alongside [ir-lab](https://github.com/Edsol/ir-lab), a res
 - [ ] IRremoteESP8266 wrapper for broad offline coverage
 - [x] HA native `infrared` platform support
 - [x] Gree fan and vertical swing generation
-- [ ] Gree: device checks for remaining modes, temperatures and power off
+- [ ] Gree: device checks for remaining modes and temperatures
 - [ ] Inclusion in the default HACS store
 
 ## Publishing a release
