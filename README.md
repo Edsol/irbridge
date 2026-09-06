@@ -36,9 +36,15 @@ new message immediately; no learning session is needed.
 
 ## Before you install
 
-- **Home Assistant 2026.8 or newer**, as required by this integration.
+- **Home Assistant 2026.7 or newer** — the version that added the `infrared`
+  platform to MQTT. The platform itself landed in 2026.4, so an ESPHome or
+  SMLIGHT emitter works from there.
 - **An IR emitter already configured in Home Assistant**, exposed as an
   `infrared.*` entity. Configure the blaster's own integration first.
+- **Zigbee2MQTT 2.13.0 or newer**, if your blaster is a Tuya/Zosung one behind
+  Zigbee2MQTT. Earlier versions expose it only as `text.*_ir_code_to_send`,
+  which the setup selector cannot see. 2.13.0 added both the infrared discovery
+  and the timings-to-Tuya conversion the emitter needs.
 - **An air conditioner using one of the supported protocols below**, with the
   blaster positioned so its IR signal can reach the unit.
 

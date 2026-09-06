@@ -1,7 +1,7 @@
 """Adapter: IRBridge raw timings -> infrared_protocols.Command.
 
 HA 2026.4+ ships an ``infrared`` platform whose emitters (ESPHome, Tuya
-Local, Broadlink, SMLIGHT, and ``mqtt.infrared`` since 2026.8) all accept
+Local, Broadlink, SMLIGHT, and ``mqtt.infrared`` since 2026.7) all accept
 the same object: an ``infrared_protocols.Command``. Its contract is a
 carrier frequency plus ``get_raw_timings()`` returning SIGNED microseconds
 (positive = mark, negative = space).
@@ -80,7 +80,7 @@ class RawTimingsCommand(Command):
         repeat_count: int = 0,
     ) -> None:
         if not raw:
-            raise ValueError("Impossibile costruire un comando IR da timings vuoti")
+            raise ValueError("Cannot build an IR command from empty timings")
         timings = to_signed(raw)
         normalize_trailing_space(timings)
         self._timings = timings

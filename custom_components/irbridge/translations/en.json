@@ -12,7 +12,7 @@
       }
     },
     "abort": {
-      "infrared_unavailable": "This Home Assistant version has no infrared platform. IRBridge requires Home Assistant 2026.8 or newer."
+      "infrared_unavailable": "This Home Assistant version has no infrared platform. IRBridge requires Home Assistant 2026.7 or newer."
     }
   },
   "options": {

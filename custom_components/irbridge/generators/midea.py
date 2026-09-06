@@ -7,7 +7,7 @@
 # con blaster Tuya ZS05 via Zigbee2MQTT. Vedere docs/protocol_midea.md.
 #
 # LIMITAZIONI ATTUALI:
-# - Fan speed non ancora mappato (richiede sweep fan taggato)
+# - Fan speed not mapped yet (needs a tagged fan sweep)
 # - Dry e auto coperti solo a 22° — le basi F2 per altre temperature
 #   sono estrapolate dalla formula, non verificate empiricamente
 # - Power on/off non usa questo generatore (codici fissi acquisiti)

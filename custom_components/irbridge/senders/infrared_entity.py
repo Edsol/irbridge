@@ -17,7 +17,7 @@ class InfraredEntitySender(IRSender):
     Any emitter on that platform accepts the same object, so this one sender
     covers ESPHome, Tuya Local, Broadlink, SMLIGHT and ``mqtt.infrared`` --
     the last being how a Zigbee2MQTT UFO-R11/ZS05 appears, which is why
-    IRBridge requires HA 2026.8 rather than the 2026.4 the platform landed in.
+    IRBridge asks for HA 2026.7 rather than the 2026.4 the platform landed in.
     """
 
     def __init__(
@@ -40,23 +40,23 @@ class InfraredEntitySender(IRSender):
             from homeassistant.components.infrared import async_send_command
         except ImportError as err:
             raise SendError(
-                "La piattaforma 'infrared' non e' disponibile: IRBridge "
-                "richiede Home Assistant 2026.8 o successivo."
+                "The 'infrared' platform is unavailable: IRBridge requires "
+                "Home Assistant 2026.7 or newer."
             ) from err
 
         state = self._hass.states.get(self._entity_id)
         if state is None:
-            raise SendError(f"Emitter {self._entity_id} non trovato.")
+            raise SendError(f"Emitter {self._entity_id} not found.")
         # "unknown" means merely NEVER USED -- an infrared emitter's state is
         # the timestamp of its last send, so a fresh blaster reads unknown and
         # must still be allowed to send its first command.
         if state.state == "unavailable":
-            raise SendError(f"Emitter {self._entity_id} non disponibile.")
+            raise SendError(f"Emitter {self._entity_id} is unavailable.")
 
         command = RawTimingsCommand(raw, frequency=self._frequency)
         try:
             await async_send_command(self._hass, self._entity_id, command)
         except Exception as err:
             raise SendError(
-                f"Invio IR fallito su {self._entity_id}: {err}"
+                f"IR send failed on {self._entity_id}: {err}"
             ) from err
