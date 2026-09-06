@@ -67,7 +67,9 @@ class StringsTests(unittest.TestCase):
 
     def test_placeholders_are_supplied_by_the_flow(self):
         """Every {name} in a description must be passed as a placeholder."""
-        supplied = set(re.findall(r'"(\w+)":\s*(?:str\()?\w', CONFIG_FLOW))
+        # Placeholders are written either inline in a description_placeholders
+        # literal or in the shared _placeholders() helper; both are dict keys.
+        supplied = set(re.findall(r'"(\w+)":\s*\S', CONFIG_FLOW))
         for section in ('config', 'options'):
             for name, step in self.strings[section]['step'].items():
                 for ph in re.findall(r'\{(\w+)\}',

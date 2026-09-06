@@ -10,6 +10,7 @@ class ElectraClimateGenerator(ClimateGenerator):
     @property
     def capabilities(self) -> ClimateCapabilities:
         return ClimateCapabilities(
+            brands=["Beko", "AUX", "Electrolux", "Frigidaire", "Electra"],
             temp_min=16,
             temp_max=32,
             fan_modes=["auto", "high", "mid", "low"],

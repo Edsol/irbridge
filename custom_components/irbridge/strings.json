@@ -2,25 +2,38 @@
   "config": {
     "step": {
       "user": {
-        "title": "IRBridge",
-        "description": "Generate IR codes on-the-fly for your climate device. Pick a protocol; the next step sends a test command so you can check it before saving.",
+        "title": "Set up your air conditioner",
+        "description": "IRBridge controls an air conditioner by generating the infrared signals its remote would send — so every temperature and mode works, with nothing to record first.\n\nTo do that it needs to know which **protocol** your unit speaks: the language of those signals. The brand on the front is only a hint, so IRBridge will send a test command and let you tell it whether the unit reacted.\n\nHave the air conditioner in sight and the blaster pointed at it before you continue.",
         "data": {
           "title": "Name",
-          "protocol": "Protocol",
-          "infrared_entity_id": "IR emitter"
+          "infrared_entity_id": "IR blaster",
+          "mode": "How should we find the protocol?"
+        },
+        "data_description": {
+          "title": "What this device will be called in Home Assistant, for example \"Bedroom AC\".",
+          "infrared_entity_id": "The IR blaster that will transmit to this unit.",
+          "mode": "Guided tries each of the {total} known protocols in turn. Expert lets you choose, if you already know which one you need."
+        }
+      },
+      "protocol": {
+        "title": "Choose a protocol",
+        "description": "Each protocol covers a family of air conditioners, listed by the brands known to use it. If yours is not named, pick the closest and test it anyway — brands share protocols more often than they advertise.",
+        "data": {
+          "protocol": "Protocol"
         }
       },
       "test": {
-        "title": "Did it work?",
-        "description": "Sent **{protocol} · cool · {temp} °C** to your air conditioner.\n\nIf it turned on and shows {temp} °C, the protocol is right. If nothing happened, clear the box below and try another one — brand names are a poor guide, and a unit sold under one brand often speaks another protocol.",
+        "title": "Did the air conditioner react?",
+        "description": "IRBridge just sent **cool, {temp} °C** using the **{protocol}** protocol ({brands}).\n\nLook at the unit. If it beeped, turned on, or its display now reads {temp} °C, that is the right protocol.\n\nIf nothing happened, uncheck the box and IRBridge will try another one. Nothing is saved until you confirm.",
         "data": {
-          "worked": "The air conditioner responded"
+          "worked": "Yes, it reacted"
         }
       }
     },
     "error": {
-      "test_failed": "No response from the air conditioner. Try a different protocol, or check that the blaster can reach the unit.",
-      "send_failed": "Could not send the test: {error}"
+      "test_failed": "That protocol got no reaction. Pick another one and try again.",
+      "none_worked": "None of the protocols got a reaction. Check that the blaster is powered, in range and pointing at the unit, then try one again. If your air conditioner uses a protocol IRBridge does not know yet, please open an issue on GitHub — a new protocol starts from captured samples.",
+      "send_failed": "The blaster could not send the test: {error}"
     },
     "abort": {
       "infrared_unavailable": "This Home Assistant version has no infrared platform. IRBridge requires Home Assistant 2026.7 or newer."
@@ -29,24 +42,24 @@
   "options": {
     "step": {
       "init": {
-        "title": "IRBridge",
-        "description": "The next step sends a test command, so a protocol change is checked before it replaces your current setup.",
+        "title": "Change protocol or blaster",
+        "description": "Your current settings keep working until a new choice has been tested. IRBridge will send a command and ask whether the unit reacted before saving anything.",
         "data": {
           "protocol": "Protocol",
-          "infrared_entity_id": "IR emitter"
+          "infrared_entity_id": "IR blaster"
         }
       },
       "test": {
-        "title": "Did it work?",
-        "description": "Sent **{protocol} · cool · {temp} °C** to your air conditioner.\n\nIf it responded, confirm below to save. If nothing happened, clear the box and pick another protocol — your current settings stay untouched until you confirm.",
+        "title": "Did the air conditioner react?",
+        "description": "IRBridge just sent **cool, {temp} °C** using the **{protocol}** protocol ({brands}).\n\nIf the unit reacted, confirm below to save. If nothing happened, uncheck the box and pick another protocol — your current settings are untouched either way.",
         "data": {
-          "worked": "The air conditioner responded"
+          "worked": "Yes, it reacted"
         }
       }
     },
     "error": {
-      "test_failed": "No response from the air conditioner. Try a different protocol, or check that the blaster can reach the unit.",
-      "send_failed": "Could not send the test: {error}"
+      "test_failed": "That protocol got no reaction. Pick another one and try again.",
+      "send_failed": "The blaster could not send the test: {error}"
     }
   }
 }

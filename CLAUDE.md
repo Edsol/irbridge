@@ -16,6 +16,9 @@ Three steps only:
 2. `generators/<name>_climate.py` — implement `ClimateGenerator` ABC from `base.py`
 3. `generators/__init__.py` — add one entry to `_REGISTRY`
 
+Declare `brands` in the capabilities: it is what the setup picker shows, and
+a protocol without it appears as a bare name nobody can match to their unit.
+
 `climate.py` and `config_flow.py` require **no changes** — the new protocol appears automatically.
 
 ### Key files
@@ -54,14 +57,21 @@ protocol name, renaming those entries to `gree`. Retiring or renaming a
 protocol again means adding it to `_RENAMED_PROTOCOLS` and bumping `VERSION`,
 or existing entries raise KeyError at setup and take the integration down.
 
-### Test step
+### Setup wizard
 
-Both flows send one real command (`cool`, 22 °C) before saving, then ask
-whether the unit responded. Answering no returns to the picker with the
-values kept. This exists because brand names do not identify protocols — the
-device this integration was built against is sold as Midea and speaks Gree.
-`TEST_HVAC_MODE` and `TEST_TEMP` in `config_flow.py` must stay legal for every
-registered protocol; `tests/test_config_flow.py` enforces that.
+Three steps, sharing the try-it-and-see machinery in `_TestMixin`:
+
+1. **user** — name, blaster, and the choice between *guided* and *expert*.
+   Explains what a protocol is and that a test signal will be transmitted.
+2. **protocol** (expert only) — the picker, labelled with the brands from
+   `ClimateCapabilities.brands`.
+3. **test** — sends `cool` / 22 °C and asks whether the unit reacted.
+   Guided mode walks the registry in order, skipping what was rejected;
+   expert mode returns to the picker. Nothing is stored until a yes.
+
+`TEST_HVAC_MODE` and `TEST_TEMP` must stay legal for every registered
+protocol, and every protocol must declare `brands` or it shows up unlabelled.
+`tests/test_config_flow.py` enforces both, plus the guided walk.
 
 ### Options flow
 

@@ -86,6 +86,10 @@ def _load(name: str, path: Path, search: list[str] | None = None):
 
 _stub_dependencies()
 _load('irbridge', COMPONENT / '__init__.py', [str(COMPONENT)])
+_load('irbridge.senders', COMPONENT / 'senders/__init__.py',
+      [str(COMPONENT / 'senders')])
+_load('irbridge.senders.infrared_entity',
+      COMPONENT / 'senders/infrared_entity.py')
 config_flow = _load('irbridge.config_flow', COMPONENT / 'config_flow.py')
 
 
@@ -110,15 +114,18 @@ class TestSendTests(unittest.TestCase):
             async def async_send_raw(self, raw):
                 seen.raw = raw
 
-        original = config_flow.InfraredEntitySender
-        config_flow.InfraredEntitySender = FakeSender
+        # The flow imports the sender inside _async_send_test, so the fake
+        # goes into the module it imports from rather than into config_flow.
+        module = sys.modules['irbridge.senders.infrared_entity']
+        original = module.InfraredEntitySender
+        module.InfraredEntitySender = FakeSender
         try:
             asyncio.run(config_flow._async_send_test(None, {
                 'protocol': protocol,
                 'infrared_entity_id': entity_id,
             }))
         finally:
-            config_flow.InfraredEntitySender = original
+            module.InfraredEntitySender = original
         return seen
 
     def test_every_protocol_produces_a_payload(self):
@@ -153,6 +160,72 @@ class TestSendTests(unittest.TestCase):
                 self.assertGreaterEqual(config_flow.TEST_TEMP, caps.temp_min)
                 self.assertLessEqual(config_flow.TEST_TEMP, caps.temp_max)
                 self.assertIn(config_flow.TEST_HVAC_MODE, caps.hvac_modes)
+
+
+class GuidedModeTests(unittest.TestCase):
+    """The guided path walks the registry without repeating itself.
+
+    Its whole value is that a user who knows nothing about protocols still
+    reaches a working setup, so the ordering and the exhaustion case are
+    what matter -- an off-by-one here either skips a protocol that would
+    have worked or loops on one that did not.
+    """
+
+    def _flow(self):
+        flow = config_flow.IRBridgeConfigFlow.__new__(
+            config_flow.IRBridgeConfigFlow)
+        flow._data = {'title': 'AC', 'infrared_entity_id': 'infrared.b'}
+        flow._tried = []
+        flow._mode = config_flow.MODE_GUIDED
+        return flow
+
+    def test_offers_protocols_in_registry_order(self):
+        flow = self._flow()
+        self.assertEqual(flow._remaining(), config_flow.available_protocols())
+
+    def test_a_rejected_protocol_is_not_offered_again(self):
+        flow = self._flow()
+        first = flow._remaining()[0]
+        flow._tried.append(first)
+        self.assertNotIn(first, flow._remaining())
+
+    def test_every_protocol_is_reachable(self):
+        """Rejecting each in turn must exhaust the list, not stall on one."""
+        flow = self._flow()
+        seen = []
+        while flow._remaining():
+            nxt = flow._remaining()[0]
+            seen.append(nxt)
+            flow._tried.append(nxt)
+        self.assertEqual(seen, config_flow.available_protocols())
+
+    def test_exhaustion_is_reported(self):
+        flow = self._flow()
+        flow._tried = list(config_flow.available_protocols())
+        self.assertEqual(flow._remaining(), [])
+
+
+class ProtocolLabelTests(unittest.TestCase):
+    def test_labels_name_the_brands(self):
+        """A bare protocol name tells a user nothing about their unit."""
+        for protocol in config_flow.available_protocols():
+            with self.subTest(protocol=protocol):
+                label = config_flow.protocol_label(protocol)
+                caps = config_flow.get_generator(protocol).capabilities
+                self.assertTrue(label.lower().startswith(protocol.lower()))
+                for brand in caps.brands:
+                    self.assertIn(brand, label)
+
+    def test_every_protocol_declares_brands(self):
+        for protocol in config_flow.available_protocols():
+            with self.subTest(protocol=protocol):
+                caps = config_flow.get_generator(protocol).capabilities
+                self.assertTrue(caps.brands,
+                                f'{protocol} would show up unlabelled')
+
+    def test_options_cover_the_registry(self):
+        values = {o['value'] for o in config_flow.protocol_options()}
+        self.assertEqual(values, set(config_flow.available_protocols()))
 
 
 class PlatformGuardTests(unittest.TestCase):

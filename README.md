@@ -62,16 +62,23 @@ on the air conditioner itself through this integration: modes, temperatures,
 fan speeds, swing and power off all behave as generated.
 See [the Gree findings](docs/protocol_gree.md).
 
-### Choosing the right protocol
+### Finding the right protocol
 
-The setup sends a real command — cooling at 22 °C — and asks whether the air
-conditioner responded. If it did not, you go straight back to the picker and
-try another protocol, with nothing saved in between.
+Setup asks how you would like to find it:
 
-This matters because a brand name does not identify a protocol. The device
-this integration was first built against is sold as Midea and turned out to
-speak Gree. Reconfiguring an existing device runs the same check, so a wrong
-guess never replaces a setup that already works.
+**Guided** — you do not choose at all. IRBridge sends a test command with the
+first protocol, asks whether the air conditioner reacted, and moves to the
+next one if it did not. Keep answering until something works.
+
+**Expert** — you pick from the list, labelled with the brands each protocol
+covers, and test that one.
+
+Either way a real command is transmitted — cooling at 22 °C — and nothing is
+saved until you confirm the unit reacted. This matters because a brand name
+does not identify a protocol: the device this integration was first built
+against is sold as Midea and turned out to speak Gree. Reconfiguring an
+existing device runs the same check, so a wrong guess never replaces a setup
+that already works.
 
 ### If you configured a device as "Midea"
 

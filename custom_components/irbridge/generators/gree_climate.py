@@ -10,6 +10,7 @@ class GreeClimateGenerator(ClimateGenerator):
     @property
     def capabilities(self) -> ClimateCapabilities:
         return ClimateCapabilities(
+            brands=["Gree", "Sinclair", "Rotenso", "Tosot", "Cooper&Hunter"],
             temp_min=16,
             temp_max=30,
             fan_modes=["auto", "low", "mid", "high"],

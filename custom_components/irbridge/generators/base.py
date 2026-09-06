@@ -7,6 +7,12 @@ from dataclasses import dataclass, field
 @dataclass
 class ClimateCapabilities:
     """Describes what a protocol supports."""
+    # Brands known to speak this protocol, for the setup picker. A brand
+    # name never identifies a protocol on its own -- the unit this
+    # integration was built against is sold as Midea and speaks Gree -- so
+    # this is a hint that narrows the guess, not an answer. The setup flow
+    # tests the choice regardless.
+    brands: list[str] = field(default_factory=list)
     temp_min: int = 16
     temp_max: int = 30
     fan_modes: list[str] = field(default_factory=lambda: ["auto"])
