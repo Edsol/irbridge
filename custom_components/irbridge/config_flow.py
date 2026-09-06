@@ -87,7 +87,8 @@ async def _async_send_test(hass: HomeAssistant, data: dict) -> None:
 
 
 class IRBridgeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    VERSION = 1
+    # 2: entries no longer carry the retired "midea" protocol name.
+    VERSION = 2
 
     def __init__(self) -> None:
         self._data: dict = {}

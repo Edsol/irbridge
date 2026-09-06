@@ -29,15 +29,22 @@ class GreeTests(unittest.TestCase):
                 )
                 self.assertEqual(raw, probe['raw'])
 
-    def test_capabilities_and_legacy_registration(self):
+    def test_capabilities(self):
         caps = generators.get_generator('gree').capabilities
         self.assertEqual(caps.fan_modes, ['auto', 'low', 'mid', 'high'])
         self.assertEqual(caps.swing_modes, ['off', 'vertical'])
         self.assertEqual(caps.frequency, 38000)
-        self.assertIn('midea', generators.available_protocols())
-        legacy = generators.get_generator('midea')
-        self.assertEqual(legacy.capabilities.fan_modes, ['auto'])
-        self.assertEqual(legacy.generate('cool', 22), generators.midea.generate_raw('cool', 22))
+
+    def test_midea_is_retired(self):
+        """The name never described a protocol, so it must not come back.
+
+        'midea' was the first, partly wrong reading of a Gree-compatible
+        unit. Entries that still carry it are renamed by async_migrate_entry;
+        offering it again in the picker would recreate the confusion.
+        """
+        self.assertNotIn('midea', generators.available_protocols())
+        with self.assertRaises(KeyError):
+            generators.get_generator('midea')
 
     def test_off_and_invalid_swing(self):
         generator = generators.get_generator('gree')

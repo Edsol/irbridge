@@ -53,7 +53,6 @@ new message immediately; no learning session is needed.
 | Protocol | Devices | Temp | Fan | Swing | Power off |
 |----------|---------|------|-----|-------|-----------|
 | `gree` | Tested device formerly labelled `midea_camera` | 16–30°C | auto/low/mid/high | vertical | ✓ |
-| `midea` | Legacy encoder; historical state mapping | 16–30°C | auto | — | legacy |
 | `electra` | Beko, AUX, Electrolux, Frigidaire | 16–32°C | auto/high/mid/low | vertical | ✓ |
 
 Brand names identify protocol families, not a guarantee that every model from
@@ -74,14 +73,20 @@ this integration was first built against is sold as Midea and turned out to
 speak Gree. Reconfiguring an existing device runs the same check, so a wrong
 guess never replaces a setup that already works.
 
-### Switching the previously labelled Midea device to Gree
+### If you configured a device as "Midea"
 
-After installing this update and restarting Home Assistant, open
-**Settings → Devices & Services → IRBridge → Configure**, select **Gree**,
-and keep your emitter. The entry reloads with the new fan and swing controls.
-Existing `midea` entries retain their old behavior until you change the protocol.
-The new Gree mapping corrects temperature and mode interpretation; `midea` is
-not an alias for it and does not claim support for the upstream Midea protocol.
+Earlier versions offered a `midea` protocol. That name never described the
+Midea protocol: it was the first, partly wrong reading of a Gree-compatible
+unit, and the device it was built against is sold as Midea while speaking
+Gree. It has been removed.
+
+Existing entries are migrated automatically on upgrade — they become `gree`,
+keeping their name and emitter, and gain the fan and swing controls the old
+mapping lacked. Nothing to do by hand. If your unit is genuinely a Midea that
+the Gree generator does not drive, please
+[open an issue](https://github.com/Edsol/irbridge/issues) with a capture: real
+Midea support would need a protocol reverse-engineered from samples, which is
+what [ir-lab](https://github.com/Edsol/ir-lab) is for.
 
 IRBridge sends through Home Assistant's native `infrared` platform. The setup
 selector lists `infrared` entities; a blaster exposed only as a `remote` entity
@@ -240,8 +245,6 @@ irbridge/
         │   ├── base.py              # ClimateGenerator ABC + ClimateCapabilities
         │   ├── gree.py              # Gree raw IR generator
         │   ├── gree_climate.py      # Gree climate capabilities
-        │   ├── midea.py             # Legacy empirical generator
-        │   ├── midea_climate.py     # Midea ClimateGenerator implementation
         │   ├── electra.py           # Electra/AUX/Beko raw IR generator
         │   └── electra_climate.py   # Electra ClimateGenerator implementation
         └── senders/

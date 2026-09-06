@@ -36,6 +36,14 @@ sender: `InfraredEntitySender`, which hands the command to HA's native
 Local, SMLIGHT and MQTT, so a new backend is HA's job rather than this
 integration's.
 
+### Entry migration
+
+`async_migrate_entry` in `__init__.py` upgrades stored entries; `VERSION` in
+`config_flow.py` is the current schema. Version 2 retired the `midea`
+protocol name, renaming those entries to `gree`. Retiring or renaming a
+protocol again means adding it to `_RENAMED_PROTOCOLS` and bumping `VERSION`,
+or existing entries raise KeyError at setup and take the integration down.
+
 ### Test step
 
 Both flows send one real command (`cool`, 22 °C) before saving, then ask
@@ -77,11 +85,6 @@ Or `docker compose up -d` if docker-compose.yaml was changed.
 - Verified on the unit through this integration: modes, temperatures, fan
   speeds, swing and power off
 
-### Midea (`midea`)
-- Legacy encoder kept for entries created before the Gree identification
-- Fan speed never mapped (only "auto" exposed); swing never acquired
-- Not an alias for Gree, and not a claim of upstream Midea support
-
 ### Electra (`electra`)
 - Devices: Beko (YKR-H/102E), AUX, Electrolux, Frigidaire
 - Protocol: IRremoteESP8266 `ir_Electra.h` confirmed via sample analysis
@@ -92,7 +95,6 @@ Or `docker compose up -d` if docker-compose.yaml was changed.
 
 ## Current limitations
 
-- `midea` remains a legacy encoder: fan speed unmapped, swing unacquired
 - Tuya Cloud fallback not yet integrated
 - Requires HA 2026.7+, and Zigbee2MQTT 2.13.0+ for Tuya/Zosung blasters
 
