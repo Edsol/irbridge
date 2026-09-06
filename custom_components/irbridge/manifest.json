@@ -1,6 +1,9 @@
 {
   "domain": "irbridge",
   "name": "IRBridge",
+  "after_dependencies": [
+    "infrared"
+  ],
   "codeowners": [
     "@Edsol"
   ],
@@ -10,8 +13,5 @@
   "iot_class": "assumed_state",
   "issue_tracker": "https://github.com/Edsol/irbridge/issues",
   "requirements": [],
-  "version": "0.2.0",
-  "after_dependencies": [
-    "infrared"
-  ]
+  "version": "0.2.0"
 }
