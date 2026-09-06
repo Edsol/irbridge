@@ -27,6 +27,7 @@ Three steps only:
 | `generators/__init__.py` | Registry — single source of truth for available protocols |
 | `senders/base.py` | `IRSender` ABC — implement to add new transmission backends |
 | `config_flow.py` | Setup wizard + options flow (protocol, emitter, test step) |
+| `strings.json` | Flow text HA actually reads; `translations/en.json` is its copy |
 
 ### Sender abstraction
 
@@ -35,6 +36,15 @@ sender: `InfraredEntitySender`, which hands the command to HA's native
 `infrared` platform. That platform already covers ESPHome, Broadlink, Tuya
 Local, SMLIGHT and MQTT, so a new backend is HA's job rather than this
 integration's.
+
+### Flow text
+
+Home Assistant resolves flow labels from `strings.json` in the component
+root, and uses `translations/<lang>.json` only for translated locales. A step
+missing from `strings.json` does not error — it renders its raw keys, so a
+question shows up as `worked`. Keep `translations/en.json` an exact copy of
+`strings.json`; `tests/test_strings.py` checks every step, field, error and
+abort the flow references, and that the two files have not drifted.
 
 ### Entry migration
 
