@@ -21,7 +21,7 @@ jobs:
         uses: hacs/action@main
         with:
           category: integration
-          # Remove once the brands PR (home-assistant/brands) is merged.
+          # Custom integration: not registered in home-assistant/brands by design.
           ignore: brands
 
   hassfest:

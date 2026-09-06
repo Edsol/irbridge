@@ -13,7 +13,6 @@
 from __future__ import annotations
 
 import struct
-from ..tuya_codec import encode_tuya_ir
 
 # ── Costanti di protocollo ──────────────────────────────────────────────────
 
@@ -178,14 +177,6 @@ def generate_raw(mode: str, temp: int) -> list[int]:
 
     return _build_raw(f1, f2)
 
-
-def generate_tuya(mode: str, temp: int) -> str:
-    """Genera il codice Tuya base64 per il comando dato.
-
-    Il codice prodotto è compatibile con il payload MQTT
-    {"ir_code_to_send": "<codice>"} di Zigbee2MQTT.
-    """
-    return encode_tuya_ir(generate_raw(mode, temp))
 
 
 def verify_against_db(db_path: str = "data/remotes.json") -> dict[str, list[str]]:

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="custom_components/irbridge/brand/icon@2x.png" alt="IRBridge" width="120">
+</p>
+
 # IRBridge
 
 [![Validate](https://github.com/Edsol/irbridge/actions/workflows/validate.yaml/badge.svg)](https://github.com/Edsol/irbridge/actions/workflows/validate.yaml)
@@ -7,6 +11,8 @@
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-custom%20integration-41BDF5.svg?logo=home-assistant&logoColor=white)](https://www.home-assistant.io/)
 
 A Home Assistant custom integration that generates IR codes on-the-fly for climate devices, without relying on pre-recorded code databases.
+
+> **Requires Home Assistant 2026.8 or newer.**
 
 ## How it works
 
@@ -19,7 +25,9 @@ ClimateGenerator (protocol-specific)
       ↓
 Raw IR timings (microseconds)
       ↓
-IRSender (mqtt_tuya / infrared_entity)
+RawTimingsCommand (signed timings + terminator)
+      ↓
+InfraredEntitySender → infrared.async_send_command
       ↓
 IR Blaster → device
 ```
@@ -33,12 +41,21 @@ No cloud, no database, no pre-recorded codes.
 | `midea` | Ferroli, Midea | 16–30°C | auto | — | ✓ |
 | `electra` | Beko, AUX, Electrolux, Frigidaire | 16–32°C | auto/high/mid/low | vertical | ✓ |
 
-## Supported senders
+## Sending
 
-| Sender | Description |
-|--------|-------------|
-| `mqtt_tuya` | Zigbee2MQTT IR blaster (Tuya ZS05, etc.) via MQTT |
-| `infrared_entity` | HA native `InfraredEmitterEntity` (ESPHome, future) |
+IRBridge sends through Home Assistant's native `infrared` platform, so one
+code path covers every emitter that implements it:
+
+| Emitter | Available since |
+|---------|-----------------|
+| ESPHome | HA 2026.4 |
+| Tuya Local | HA 2026.4 |
+| Broadlink | HA 2026.5 |
+| SMLIGHT | HA 2026.5 |
+| MQTT (`mqtt.infrared`) | HA 2026.8 |
+
+A Zigbee2MQTT UFO-R11/ZS05 appears as an ordinary `infrared` emitter from HA
+2026.8 — which is why that is the minimum version.
 
 ## Installation
 
@@ -82,8 +99,7 @@ The config flow guides you through:
 
 1. **Title** — name for the climate entity (e.g. "Living Room AC")
 2. **Protocol** — select the protocol matching your device
-3. **Sender** — how to transmit IR signals
-4. **Blaster entity** — the `text.*_ir_code_to_send` entity from Zigbee2MQTT
+3. **IR emitter** — an emitter entity from the `infrared` platform
 
 You can reconfigure at any time via **Settings → Devices & Services → IRBridge → Configure**.
 
@@ -106,6 +122,7 @@ class MyProtocolClimateGenerator(ClimateGenerator):
             fan_modes=["auto", "high", "low"],
             swing_modes=["off", "vertical"],
             hvac_modes=["off", "cool", "heat", "dry", "fan_only", "auto"],
+            frequency=38000,  # carrier in Hz; omit unless the protocol differs
         )
 
     def generate(self, hvac_mode, temp, fan_mode="auto", swing_mode="off") -> list[int]:
@@ -136,7 +153,7 @@ irbridge/
         ├── const.py
         ├── config_flow.py           # Setup wizard + options flow
         ├── climate.py               # Protocol-agnostic ClimateEntity
-        ├── tuya_codec.py            # Tuya base64 encoder/decoder
+        ├── ir_command.py            # Raw timings -> infrared_protocols.Command
         ├── errors.py
         ├── generators/
         │   ├── __init__.py          # Registry: get_generator(), available_protocols()
@@ -146,9 +163,9 @@ irbridge/
         │   ├── electra.py           # Electra/AUX/Beko raw IR generator
         │   └── electra_climate.py   # Electra ClimateGenerator implementation
         └── senders/
+            ├── __init__.py          # build_sender() factory
             ├── base.py              # IRSender ABC
-            ├── mqtt_tuya.py         # MQTT Tuya sender (Zigbee2MQTT)
-            └── infrared_entity.py   # HA InfraredEmitterEntity sender (future)
+            └── infrared_entity.py   # HA native infrared platform sender
 ```
 
 ## Relationship with ir-lab
@@ -181,6 +198,6 @@ data:
 - [ ] More protocols (LG, Daikin, Samsung, Panasonic, ...)
 - [ ] Tuya Cloud fallback for unknown brands
 - [ ] IRremoteESP8266 wrapper for broad offline coverage
-- [ ] HA native `InfraredEmitterEntity` support (Zigbee2MQTT bridge)
+- [x] HA native `infrared` platform support
 - [ ] Midea swing support (requires sample acquisition)
 - [ ] HACS distribution

@@ -7,17 +7,10 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import (
-    CONF_PROTOCOL,
-    CONF_SENDER,
-    CONF_TEXT_ENTITY_ID,
-    CONF_INFRARED_ENTITY_ID,
-    SENDER_MQTT_TUYA,
-)
+from .const import CONF_PROTOCOL
 from .generators import get_generator
 from .generators.base import ClimateGenerator
-from .senders.mqtt_tuya import MqttTuyaSender
-from .senders.infrared_entity import InfraredEntitySender
+from .senders import build_sender
 
 
 async def async_setup_entry(
@@ -25,15 +18,8 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    protocol = entry.data[CONF_PROTOCOL]
-    sender_type = entry.data[CONF_SENDER]
-
-    generator = get_generator(protocol)
-
-    if sender_type == SENDER_MQTT_TUYA:
-        sender = MqttTuyaSender(hass, entry.data[CONF_TEXT_ENTITY_ID])
-    else:
-        sender = InfraredEntitySender(hass, entry.data[CONF_INFRARED_ENTITY_ID])
+    generator = get_generator(entry.data[CONF_PROTOCOL])
+    sender = build_sender(hass, entry, generator)
 
     async_add_entities([IRBridgeRemote(entry, generator, sender)])
 

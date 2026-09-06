@@ -12,6 +12,10 @@ class ClimateCapabilities:
     fan_modes: list[str] = field(default_factory=lambda: ["auto"])
     swing_modes: list[str] = field(default_factory=list)  # empty = no swing
     hvac_modes: list[str] = field(default_factory=lambda: ["off", "cool", "heat", "dry", "fan_only", "auto"])
+    # IR carrier in Hz. 38 kHz covers most AC protocols; a few families
+    # (some Sharp and Denon variants) key at 36 or 40 kHz, and a blaster
+    # given the wrong carrier transmits a signal the unit cannot hear.
+    frequency: int = 38000
 
 
 class ClimateGenerator(ABC):

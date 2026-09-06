@@ -4,3 +4,7 @@ class IRBridgeError(Exception):
 
 class CodecError(IRBridgeError):
     """Raised when an IR code cannot be decoded or encoded."""
+
+
+class SendError(IRBridgeError):
+    """Raised when an IR command cannot be transmitted."""

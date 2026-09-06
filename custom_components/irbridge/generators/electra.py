@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from ..tuya_codec import encode_tuya_ir
 
 # Protocollo Electra/AUX — 13 byte, singolo frame, 104 bit
 # Usato da: Beko (YKR-H/102E), AUX, Electrolux, Frigidaire e altri OEM
@@ -132,11 +131,5 @@ def generate_raw(mode: str, temp: int, fan: str = "auto",
 
     state = _build_electra_bytes(mode, temp, fan=fan, power=power, swing_v=swing_v)
     return _build_raw(state)
-
-
-def generate_tuya(mode: str, temp: int, fan: str = "auto",
-                  power: bool = True, swing_v: bool = False) -> str:
-    """Genera il codice Tuya base64 per il comando dato."""
-    return encode_tuya_ir(generate_raw(mode, temp, fan=fan, power=power, swing_v=swing_v))
 
 

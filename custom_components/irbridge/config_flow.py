@@ -4,23 +4,40 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.helpers import selector
 
-from .const import (
-    DOMAIN,
-    CONF_PROTOCOL,
-    CONF_SENDER,
-    CONF_TEXT_ENTITY_ID,
-    CONF_INFRARED_ENTITY_ID,
-    SENDER_MQTT_TUYA,
-    SENDER_INFRARED_ENTITY,
-    SENDERS,
-)
+from .const import CONF_INFRARED_ENTITY_ID, CONF_PROTOCOL, DOMAIN
 from .generators import available_protocols
 
-_PROTOCOL_OPTIONS = [{"value": p, "label": p.capitalize()} for p in available_protocols()]
-_SENDER_OPTIONS = [
-    {"value": SENDER_MQTT_TUYA, "label": "MQTT Tuya (Zigbee2MQTT)"},
-    {"value": SENDER_INFRARED_ENTITY, "label": "Infrared Entity (ESPHome)"},
+_PROTOCOL_OPTIONS = [
+    {"value": p, "label": p.capitalize()} for p in available_protocols()
 ]
+
+
+def _infrared_platform_available(hass) -> bool:
+    """True when this core ships the ``infrared`` platform.
+
+    Checked before showing the emitter picker: on an older core the domain
+    holds no entities and the selector would come up empty with nothing to
+    explain why.
+    """
+    try:
+        import homeassistant.components.infrared  # noqa: F401
+    except ImportError:
+        return False
+    return True
+
+
+def _emitter_schema(default: str | None = None) -> vol.Schema:
+    """Schema for the emitter picker, optionally pre-filled."""
+    key = (
+        vol.Required(CONF_INFRARED_ENTITY_ID, default=default)
+        if default
+        else vol.Required(CONF_INFRARED_ENTITY_ID)
+    )
+    return vol.Schema({
+        key: selector.EntitySelector(
+            selector.EntitySelectorConfig(domain="infrared")
+        ),
+    })
 
 
 class IRBridgeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -34,11 +51,14 @@ class IRBridgeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return IRBridgeOptionsFlow(config_entry)
 
     async def async_step_user(self, user_input=None):
+        if not _infrared_platform_available(self.hass):
+            return self.async_abort(reason="infrared_unavailable")
+
         if user_input is not None:
             self._data.update(user_input)
-            if user_input[CONF_SENDER] == SENDER_MQTT_TUYA:
-                return await self.async_step_mqtt()
-            return await self.async_step_infrared()
+            return self.async_create_entry(
+                title=self._data["title"], data=self._data
+            )
 
         return self.async_show_form(
             step_id="user",
@@ -47,34 +67,6 @@ class IRBridgeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(CONF_PROTOCOL): selector.SelectSelector(
                     selector.SelectSelectorConfig(options=_PROTOCOL_OPTIONS)
                 ),
-                vol.Required(CONF_SENDER): selector.SelectSelector(
-                    selector.SelectSelectorConfig(options=_SENDER_OPTIONS)
-                ),
-            }),
-        )
-
-    async def async_step_mqtt(self, user_input=None):
-        if user_input is not None:
-            self._data.update(user_input)
-            return self.async_create_entry(title=self._data["title"], data=self._data)
-
-        return self.async_show_form(
-            step_id="mqtt",
-            data_schema=vol.Schema({
-                vol.Required(CONF_TEXT_ENTITY_ID): selector.EntitySelector(
-                    selector.EntitySelectorConfig(domain="text")
-                ),
-            }),
-        )
-
-    async def async_step_infrared(self, user_input=None):
-        if user_input is not None:
-            self._data.update(user_input)
-            return self.async_create_entry(title=self._data["title"], data=self._data)
-
-        return self.async_show_form(
-            step_id="infrared",
-            data_schema=vol.Schema({
                 vol.Required(CONF_INFRARED_ENTITY_ID): selector.EntitySelector(
                     selector.EntitySelectorConfig(domain="infrared")
                 ),
@@ -83,7 +75,7 @@ class IRBridgeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class IRBridgeOptionsFlow(config_entries.OptionsFlow):
-    """Allows reconfiguring protocol, sender and blaster after setup."""
+    """Allows reconfiguring protocol and emitter after setup."""
 
     def __init__(self, config_entry) -> None:
         self._entry = config_entry
@@ -92,47 +84,23 @@ class IRBridgeOptionsFlow(config_entries.OptionsFlow):
     async def async_step_init(self, user_input=None):
         if user_input is not None:
             self._data.update(user_input)
-            if user_input[CONF_SENDER] == SENDER_MQTT_TUYA:
-                return await self.async_step_mqtt()
-            return await self.async_step_infrared()
+            self.hass.config_entries.async_update_entry(
+                self._entry, data=self._data
+            )
+            return self.async_create_entry(title="", data={})
 
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema({
-                vol.Required(CONF_PROTOCOL, default=self._data.get(CONF_PROTOCOL)): selector.SelectSelector(
+                vol.Required(
+                    CONF_PROTOCOL, default=self._data.get(CONF_PROTOCOL)
+                ): selector.SelectSelector(
                     selector.SelectSelectorConfig(options=_PROTOCOL_OPTIONS)
                 ),
-                vol.Required(CONF_SENDER, default=self._data.get(CONF_SENDER)): selector.SelectSelector(
-                    selector.SelectSelectorConfig(options=_SENDER_OPTIONS)
-                ),
-            }),
-        )
-
-    async def async_step_mqtt(self, user_input=None):
-        if user_input is not None:
-            self._data.update(user_input)
-            self.hass.config_entries.async_update_entry(self._entry, data=self._data)
-            return self.async_create_entry(title="", data={})
-
-        return self.async_show_form(
-            step_id="mqtt",
-            data_schema=vol.Schema({
-                vol.Required(CONF_TEXT_ENTITY_ID, default=self._data.get(CONF_TEXT_ENTITY_ID)): selector.EntitySelector(
-                    selector.EntitySelectorConfig(domain="text")
-                ),
-            }),
-        )
-
-    async def async_step_infrared(self, user_input=None):
-        if user_input is not None:
-            self._data.update(user_input)
-            self.hass.config_entries.async_update_entry(self._entry, data=self._data)
-            return self.async_create_entry(title="", data={})
-
-        return self.async_show_form(
-            step_id="infrared",
-            data_schema=vol.Schema({
-                vol.Required(CONF_INFRARED_ENTITY_ID, default=self._data.get(CONF_INFRARED_ENTITY_ID)): selector.EntitySelector(
+                vol.Required(
+                    CONF_INFRARED_ENTITY_ID,
+                    default=self._data.get(CONF_INFRARED_ENTITY_ID),
+                ): selector.EntitySelector(
                     selector.EntitySelectorConfig(domain="infrared")
                 ),
             }),
