@@ -57,11 +57,10 @@ new message immediately; no learning session is needed.
 | `electra` | Beko, AUX, Electrolux, Frigidaire | 16–32°C | auto/high/mid/low | vertical | ✓ |
 
 Brand names identify protocol families, not a guarantee that every model from
-that brand is compatible. Gree cool at 24 C, high fan and automatic vertical
-swing were verified through the lab's MQTT blaster, which checks the generated
-IR payload rather than a full Home Assistant round trip. Power off was since
-confirmed on the unit itself, through this integration. Low fan was reported as
-probable; other implemented states still require device checks.
+that brand is compatible. The Gree protocol was first verified against the
+lab's MQTT blaster, which checks the generated IR payload, and then confirmed
+on the air conditioner itself through this integration: modes, temperatures,
+fan speeds, swing and power off all behave as generated.
 See [the Gree findings](docs/protocol_gree.md).
 
 ### Switching the previously labelled Midea device to Gree
@@ -250,8 +249,7 @@ IRBridge is developed alongside [ir-lab](https://github.com/Edsol/ir-lab), a res
 - [ ] Tuya Cloud fallback for unknown brands
 - [ ] IRremoteESP8266 wrapper for broad offline coverage
 - [x] HA native `infrared` platform support
-- [x] Gree fan and vertical swing generation
-- [ ] Gree: device checks for remaining modes and temperatures
+- [x] Gree fan and vertical swing generation, verified on the device
 - [ ] Inclusion in the default HACS store
 
 ## Publishing a release
