@@ -246,3 +246,24 @@ IRBridge is developed alongside [ir-lab](https://github.com/Edsol/ir-lab), a res
 - [x] Gree fan and vertical swing generation
 - [ ] Gree: device checks for remaining modes, temperatures and power off
 - [ ] Inclusion in the default HACS store
+
+## Publishing a release
+
+The `Release` workflow runs when a tag starting with `v` is pushed. It runs the
+same generator tests, HACS and Hassfest checks as the validation workflow, then
+requires the tag to match `custom_components/irbridge/manifest.json` exactly
+(`v` plus `version`). It publishes a GitHub Release with generated release notes
+and an `irbridge.zip` asset. No additional token secret is required.
+
+To release, update and commit the manifest version, push that commit, then tag
+it and push the tag. For example, **after setting the version to `0.3.0`**:
+
+```bash
+git tag -a v0.3.0 -m "IRBridge 0.3.0"
+git push origin v0.3.0
+```
+
+Versions such as `0.3.0rc1` (tag `v0.3.0rc1`) are marked as prereleases.
+The ZIP contains the integration files at its root: for manual installation,
+extract it into `config/custom_components/irbridge/`, then restart Home Assistant.
+HACS continues to install from the tagged repository using the existing layout.

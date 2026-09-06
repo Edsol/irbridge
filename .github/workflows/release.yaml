@@ -1,0 +1,79 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    uses: ./.github/workflows/validate.yaml
+
+  release:
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Check version and build integration ZIP
+        id: package
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        shell: python
+        run: |
+          import json
+          import os
+          from pathlib import Path
+          import re
+          import subprocess
+          from zipfile import ZipFile, ZIP_DEFLATED
+
+          root = Path("custom_components/irbridge")
+          version = json.loads((root / "manifest.json").read_text())["version"]
+          tag = os.environ["RELEASE_TAG"]
+          # Stable versions or Python-style prereleases, e.g. 0.3.0rc1.
+          if not re.fullmatch(r"\d+\.\d+\.\d+(?:(?:a|b|rc)\d+)?", version):
+              raise SystemExit(f"Unsupported release version: {version!r}")
+          if tag != f"v{version}":
+              raise SystemExit(f"Tag {tag!r} does not match manifest version v{version}")
+
+          files = subprocess.check_output(
+              ["git", "ls-files", "-z", "--", str(root)], text=True
+          ).split("\0")
+          archive = Path("dist/irbridge.zip")
+          archive.parent.mkdir(exist_ok=True)
+          with ZipFile(archive, "w", ZIP_DEFLATED) as bundle:
+              for filename in sorted(filter(None, files)):
+                  path = Path(filename)
+                  if "__pycache__" in path.parts or path.suffix == ".pyc":
+                      continue
+                  bundle.write(path, path.relative_to(root).as_posix())
+              bundle.write("LICENSE", "LICENSE")
+          with ZipFile(archive) as bundle:
+              assert "manifest.json" in bundle.namelist()
+              assert "__init__.py" in bundle.namelist()
+              assert bundle.testzip() is None
+          prerelease = not bool(re.fullmatch(r"\d+\.\d+\.\d+", version))
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write(f"prerelease={str(prerelease).lower()}\n")
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          prerelease: ${{ steps.package.outputs.prerelease == 'true' }}
+          files: dist/irbridge.zip
+          fail_on_unmatched_files: true
