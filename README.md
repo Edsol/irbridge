@@ -10,29 +10,37 @@
 [![License](https://img.shields.io/github/license/Edsol/irbridge)](LICENSE)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-custom%20integration-41BDF5.svg?logo=home-assistant&logoColor=white)](https://www.home-assistant.io/)
 
-A Home Assistant custom integration that generates IR codes on-the-fly for climate devices, without relying on pre-recorded code databases.
+**Your air conditioner in Home Assistant. IR codes generated on demand.**
 
-> **Requires Home Assistant 2026.8 or newer.**
+IRBridge turns a compatible IR-controlled air conditioner into a Home Assistant
+climate entity. Choose a temperature, mode or fan speed, and IRBridge calculates
+the command and sends it through your IR blaster.
 
-## How it works
+There is no need to record a separate code for every temperature and mode:
+supported commands are generated locally from the device's protocol.
 
-IRBridge implements protocol-specific IR code generators in Python. When you change the temperature or mode in Home Assistant, the integration generates the exact IR signal for your device and transmits it via your IR blaster.
+## What you get
 
-```
-HA Climate Entity
-      ↓
-ClimateGenerator (protocol-specific)
-      ↓
-Raw IR timings (microseconds)
-      ↓
-RawTimingsCommand (signed timings + terminator)
-      ↓
-InfraredEntitySender → infrared.async_send_command
-      ↓
-IR Blaster → device
-```
+- **Climate controls** for dashboards and automations, with the temperature
+  range, fan modes and swing options supported by your selected protocol.
+- **A remote entity** for sending commands such as `cool_22` from scripts or
+  remote cards.
+- **Setup through the UI:** name your device, choose its protocol and select
+  an IR emitter.
+- **Local code generation**, with no cloud account or downloaded code database
+  required by IRBridge.
 
-No cloud, no database, no pre-recorded codes.
+For example, selecting **Cool · 22 °C** generates the corresponding IR message
+and sends it through the emitter you configured. Changing to 23 °C generates a
+new message immediately; no learning session is needed.
+
+## Before you install
+
+- **Home Assistant 2026.8 or newer**, as required by this integration.
+- **An IR emitter already configured in Home Assistant**, exposed as an
+  `infrared.*` entity. Configure the blaster's own integration first.
+- **An air conditioner using one of the supported protocols below**, with the
+  blaster positioned so its IR signal can reach the unit.
 
 ## Supported protocols
 
@@ -41,21 +49,13 @@ No cloud, no database, no pre-recorded codes.
 | `midea` | Ferroli, Midea | 16–30°C | auto | — | ✓ |
 | `electra` | Beko, AUX, Electrolux, Frigidaire | 16–32°C | auto/high/mid/low | vertical | ✓ |
 
-## Sending
+Brand names identify protocol families, not a guarantee that every model from
+that brand is compatible. Midea currently exposes only automatic fan speed and
+has no swing support.
 
-IRBridge sends through Home Assistant's native `infrared` platform, so one
-code path covers every emitter that implements it:
-
-| Emitter | Available since |
-|---------|-----------------|
-| ESPHome | HA 2026.4 |
-| Tuya Local | HA 2026.4 |
-| Broadlink | HA 2026.5 |
-| SMLIGHT | HA 2026.5 |
-| MQTT (`mqtt.infrared`) | HA 2026.8 |
-
-A Zigbee2MQTT UFO-R11/ZS05 appears as an ordinary `infrared` emitter from HA
-2026.8 — which is why that is the minimum version.
+IRBridge sends through Home Assistant's native `infrared` platform. The setup
+selector lists `infrared` entities; a blaster exposed only as a `remote` entity
+cannot be selected directly.
 
 ## Installation
 
@@ -89,7 +89,7 @@ After installing (either method) and restarting:
 
 1. Go to **Settings → Devices & Services → Add Integration**.
 2. Search for **IRBridge**.
-3. Select protocol, sender, and your IR blaster entity.
+3. Enter a name, select your device protocol, and choose your `infrared` emitter.
 
 [![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=irbridge)
 
@@ -103,7 +103,56 @@ The config flow guides you through:
 
 You can reconfigure at any time via **Settings → Devices & Services → IRBridge → Configure**.
 
+## Remote entity
+
+Each configured device also exposes a `remote` entity, compatible with [universal-remote-card](https://github.com/Nerwyn/universal-remote-card).
+
+Commands are generated on-the-fly using the same IR generators. Format:
+
+| Command | Example | Description |
+|---------|---------|-------------|
+| `off` | `off` | Power off |
+| `<mode>` | `cool`, `heat` | Mode at current temp |
+| `<mode>_<temp>` | `cool_22`, `heat_20` | Mode + temperature |
+| `<mode>_<temp>_<fan>` | `cool_22_high` | Mode + temp + fan speed |
+| `swing_on` / `swing_off` | `swing_on` | Swing (applied on next command) |
+
+For a script action, replace the entity ID below with your IRBridge remote:
+
+```yaml
+action: remote.send_command
+target:
+  entity_id: remote.living_room_ac_remote
+data:
+  command: cool_22
+```
+
+Use temperatures and fan modes supported by your selected protocol. A mode-only
+command uses the remote entity's remembered temperature and the default fan
+speed.
+
+## How it works
+
+IRBridge translates the requested climate state into raw IR timings using a
+protocol-specific `ClimateGenerator`. Its sender wraps those timings in a
+`RawTimingsCommand` and passes the command to Home Assistant's native
+`infrared.async_send_command` API, which handles transmission through the
+configured emitter.
+
+## Troubleshooting
+
+- **No emitter in the setup selector:** check that the blaster's integration
+  provides an `infrared.*` entity and that you are running the required Home
+  Assistant version.
+- **The command is sent but the AC does not react:** check emitter placement
+  and protocol compatibility. A shared brand name alone does not establish a
+  protocol match.
+- **A fan or swing option is missing:** available controls come from the
+  selected generator's capabilities; see the protocol table above.
+
 ## Adding a new protocol
+
+Paths below are relative to `custom_components/irbridge/`.
 
 1. Create `generators/<name>.py` with the raw IR generation logic.
 2. Create `generators/<name>_climate.py` implementing `ClimateGenerator`:
@@ -153,6 +202,7 @@ irbridge/
         ├── const.py
         ├── config_flow.py           # Setup wizard + options flow
         ├── climate.py               # Protocol-agnostic ClimateEntity
+        ├── remote.py                # Generated commands for scripts and cards
         ├── ir_command.py            # Raw timings -> infrared_protocols.Command
         ├── errors.py
         ├── generators/
@@ -170,28 +220,7 @@ irbridge/
 
 ## Relationship with ir-lab
 
-IRBridge is developed alongside [ir-lab](../README.md), a research tool for capturing, analyzing and reverse-engineering IR protocols. Protocols are first reverse-engineered in ir-lab using a Zigbee2MQTT IR blaster, then the verified generators are ported to IRBridge.
-
-## Remote entity
-
-Each configured device also exposes a `remote` entity, compatible with [universal-remote-card](https://github.com/Nerwyn/universal-remote-card).
-
-Commands are generated on-the-fly using the same IR generators. Format:
-
-| Command | Example | Description |
-|---------|---------|-------------|
-| `off` | `off` | Power off |
-| `<mode>` | `cool`, `heat` | Mode at current temp |
-| `<mode>_<temp>` | `cool_22`, `heat_20` | Mode + temperature |
-| `<mode>_<temp>_<fan>` | `cool_22_high` | Mode + temp + fan speed |
-| `swing_on` / `swing_off` | `swing_on` | Swing (applied on next command) |
-
-Example universal-remote-card button:
-```yaml
-service: remote.send_command
-data:
-  command: cool_22
-```
+IRBridge is developed alongside [ir-lab](https://github.com/Edsol/ir-lab), a research tool for capturing, analyzing and reverse-engineering IR protocols. Protocols are first reverse-engineered in ir-lab using a Zigbee2MQTT IR blaster, then the verified generators are ported to IRBridge.
 
 ## Roadmap
 
@@ -200,4 +229,4 @@ data:
 - [ ] IRremoteESP8266 wrapper for broad offline coverage
 - [x] HA native `infrared` platform support
 - [ ] Midea swing support (requires sample acquisition)
-- [ ] HACS distribution
+- [ ] Inclusion in the default HACS store
