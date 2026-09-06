@@ -1,3 +1,5 @@
+# Legacy encoder: preserved for compatibility. The tested device uses Gree.
+# Use the gree generator for corrected fields; historical state labels are unreliable.
 # 
 # _generator.py — generatore codici IR Midea camera
 #

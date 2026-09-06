@@ -46,12 +46,25 @@ new message immediately; no learning session is needed.
 
 | Protocol | Devices | Temp | Fan | Swing | Power off |
 |----------|---------|------|-----|-------|-----------|
-| `midea` | Ferroli, Midea | 16–30°C | auto | — | ✓ |
+| `gree` | Tested device formerly labelled `midea_camera` | 16–30°C | auto/low/mid/high | vertical | implemented, unverified |
+| `midea` | Legacy encoder; historical state mapping | 16–30°C | auto | — | legacy |
 | `electra` | Beko, AUX, Electrolux, Frigidaire | 16–32°C | auto/high/mid/low | vertical | ✓ |
 
 Brand names identify protocol families, not a guarantee that every model from
-that brand is compatible. Midea currently exposes only automatic fan speed and
-has no swing support.
+that brand is compatible. Gree cool at 24 C, high fan and automatic vertical
+swing were verified through the lab's MQTT blaster. Low fan was reported as
+probable; other implemented states still require device checks. These tests
+verify the generated IR payload, not an end-to-end Home Assistant installation.
+See [the Gree findings](docs/protocol_gree.md).
+
+### Switching the previously labelled Midea device to Gree
+
+After installing this update and restarting Home Assistant, open
+**Settings → Devices & Services → IRBridge → Configure**, select **Gree**,
+and keep your emitter. The entry reloads with the new fan and swing controls.
+Existing `midea` entries retain their old behavior until you change the protocol.
+The new Gree mapping corrects temperature and mode interpretation; `midea` is
+not an alias for it and does not claim support for the upstream Midea protocol.
 
 IRBridge sends through Home Assistant's native `infrared` platform. The setup
 selector lists `infrared` entities; a blaster exposed only as a `remote` entity
@@ -208,7 +221,9 @@ irbridge/
         ├── generators/
         │   ├── __init__.py          # Registry: get_generator(), available_protocols()
         │   ├── base.py              # ClimateGenerator ABC + ClimateCapabilities
-        │   ├── midea.py             # Midea/Ferroli raw IR generator
+        │   ├── gree.py              # Gree raw IR generator
+        │   ├── gree_climate.py      # Gree climate capabilities
+        │   ├── midea.py             # Legacy empirical generator
         │   ├── midea_climate.py     # Midea ClimateGenerator implementation
         │   ├── electra.py           # Electra/AUX/Beko raw IR generator
         │   └── electra_climate.py   # Electra ClimateGenerator implementation
@@ -228,5 +243,6 @@ IRBridge is developed alongside [ir-lab](https://github.com/Edsol/ir-lab), a res
 - [ ] Tuya Cloud fallback for unknown brands
 - [ ] IRremoteESP8266 wrapper for broad offline coverage
 - [x] HA native `infrared` platform support
-- [ ] Midea swing support (requires sample acquisition)
+- [x] Gree fan and vertical swing generation
+- [ ] Gree: device checks for remaining modes, temperatures and power off
 - [ ] Inclusion in the default HACS store

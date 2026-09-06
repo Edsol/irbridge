@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from .base import ClimateCapabilities, ClimateGenerator
+from .gree_climate import GreeClimateGenerator
 from .midea_climate import MideaClimateGenerator
 from .electra_climate import ElectraClimateGenerator
 
 _REGISTRY: dict[str, type[ClimateGenerator]] = {
+    "gree": GreeClimateGenerator,
     "midea": MideaClimateGenerator,
     "electra": ElectraClimateGenerator,
 }
