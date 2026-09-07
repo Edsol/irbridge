@@ -1,5 +1,13 @@
 # IRBridge — Agent Instructions
 
+## License
+
+GPL-3.0-or-later since 0.5.0 (MIT up to 0.4.0). Every source file carries the
+GPL header; new files must too. The change was deliberate: a derivative must
+not be closed and sold. Because GPL-3.0 is compatible with LGPL-2.1, protocol
+code may be adapted from IRremoteESP8266 with attribution in the file — see
+[NOTICE.md](NOTICE.md).
+
 ## What this is
 
 A Home Assistant custom integration that generates IR codes on-the-fly for climate devices. No pre-recorded code databases — codes are computed from protocol specs.

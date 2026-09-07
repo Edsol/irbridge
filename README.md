@@ -7,7 +7,7 @@
 [![Validate](https://github.com/Edsol/irbridge/actions/workflows/validate.yaml/badge.svg)](https://github.com/Edsol/irbridge/actions/workflows/validate.yaml)
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 [![GitHub release](https://img.shields.io/github/v/release/Edsol/irbridge?include_prereleases&sort=semver)](https://github.com/Edsol/irbridge/releases)
-[![License](https://img.shields.io/github/license/Edsol/irbridge)](LICENSE)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-custom%20integration-41BDF5.svg?logo=home-assistant&logoColor=white)](https://www.home-assistant.io/)
 
 **Your air conditioner in Home Assistant. IR codes generated on demand.**
@@ -272,6 +272,15 @@ IRBridge is developed alongside [ir-lab](https://github.com/Edsol/ir-lab), a res
 - [x] HA native `infrared` platform support
 - [x] Gree fan and vertical swing generation, verified on the device
 - [ ] Inclusion in the default HACS store
+
+## License
+
+GPL-3.0-or-later — see [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md).
+
+Releases up to 0.4.0 were MIT; from 0.5.0 IRBridge is GPL. You may still sell
+a product built on it, but a derivative you distribute has to come with its
+source under the same terms. See [NOTICE.md](NOTICE.md) for the reasoning and
+for how protocol specifications are treated.
 
 ## Publishing a release
 
