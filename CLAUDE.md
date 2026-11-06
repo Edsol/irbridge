@@ -126,6 +126,19 @@ Or `docker compose up -d` if docker-compose.yaml was changed.
 - Tuya Cloud fallback not yet integrated
 - Requires HA 2026.7+, and Zigbee2MQTT 2.13.0+ for Tuya/Zosung blasters
 
+## Climate state and restarts
+
+`IRBridgeClimate` is a `RestoreEntity`: `async_added_to_hass` adopts the last
+saved state (mode, target, fan, swing; the last active mode travels as extra
+restore data) and **never transmits**. Values the current protocol cannot
+express are dropped. Do not add a "resync" send at startup: it beeps every unit
+and can switch one back on that was turned off with the original remote.
+
+The temperature members are picked at import time (`_NATIVE_TEMPERATURES`):
+HA 2026.11 renamed them to `native_*` (old names stop working in 2027.11),
+while `hacs.json` still admits 2026.7. Drop the old branch when the minimum
+version reaches 2026.11. `tests/test_climate_restore.py` covers both.
+
 ## Remote entity
 
 `remote.py` exposes an `IRBridgeRemote` entity alongside the climate entity. It accepts command strings and generates IR on-the-fly using the same generator.

@@ -181,6 +181,12 @@ protocol-specific `ClimateGenerator`. Its sender wraps those timings in a
 `infrared.async_send_command` API, which handles transmission through the
 configured emitter.
 
+IR is one-way: the entity cannot read the unit back, so its state is what it
+last transmitted. That state (mode, target temperature, fan, swing and the last
+active mode used by `turn_on`) is restored after a Home Assistant restart
+**without transmitting anything**. If the unit was operated with its original
+remote in the meantime, the entity shows the old state until its next command.
+
 ## Troubleshooting
 
 - **No emitter in the setup selector:** check that the blaster's integration

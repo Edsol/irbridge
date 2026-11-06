@@ -15,6 +15,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+import math
+from typing import Any
+
 from homeassistant.components.climate import (
     ClimateEntity,
     ClimateEntityFeature,
@@ -24,11 +28,22 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.restore_state import RestoredExtraData, RestoreEntity
+from homeassistant.util.unit_conversion import TemperatureConverter
 
 from .const import CONF_PROTOCOL
 from .generators import get_generator
 from .generators.base import ClimateGenerator
 from .senders import build_sender
+
+# Home Assistant 2026.11 renamed the climate temperature members to native_*.
+# The old names log a warning there and stop working in 2027.11, while the
+# new ones do not exist before 2026.11 -- and hacs.json still admits 2026.7.
+# The entity therefore declares whichever pair the running core knows.
+_NATIVE_TEMPERATURES = hasattr(ClimateEntity, "native_target_temperature")
+
+DEFAULT_TEMP = 22
+ATTR_LAST_ACTIVE_MODE = "last_active_mode"
 
 _HA_TO_INTERNAL = {
     HVACMode.OFF:      "off",
@@ -53,12 +68,24 @@ async def async_setup_entry(
     async_add_entities([IRBridgeClimate(entry, generator, sender)])
 
 
-class IRBridgeClimate(ClimateEntity):
+class IRBridgeClimate(ClimateEntity, RestoreEntity):
+    """An air conditioner driven blind, through generated IR frames.
+
+    IR is one-way, so the unit can never be asked what it is doing: the
+    entity's state is only what it last told the unit. That state is restored
+    across restarts without transmitting -- the unit already holds it, and a
+    restart that re-sent it would beep every AC in the house, or switch on
+    one somebody had turned off with the original remote in the meantime.
+    """
+
     _attr_has_entity_name = True
     _attr_should_poll = False
     _attr_assumed_state = True
-    _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_target_temperature_step = 1
+    if _NATIVE_TEMPERATURES:
+        _attr_native_temperature_unit = UnitOfTemperature.CELSIUS
+    else:
+        _attr_temperature_unit = UnitOfTemperature.CELSIUS
 
     def __init__(self, entry: ConfigEntry, generator: ClimateGenerator, sender) -> None:
         self._entry = entry
@@ -86,10 +113,89 @@ class IRBridgeClimate(ClimateEntity):
         self._attr_supported_features = features
 
         self._attr_hvac_mode = HVACMode.OFF
-        self._attr_target_temperature = 22
+        self._target_temp = DEFAULT_TEMP
         self._attr_fan_mode = caps.fan_modes[0] if caps.fan_modes else None
         self._attr_swing_mode = caps.swing_modes[0] if caps.swing_modes else None
         self._last_active_mode = HVACMode.COOL
+
+    # The target temperature lives in _target_temp and is exposed through
+    # whichever property the running core reads (see _NATIVE_TEMPERATURES).
+    if _NATIVE_TEMPERATURES:
+        @property
+        def native_target_temperature(self) -> float | None:
+            return self._target_temp
+    else:
+        @property
+        def target_temperature(self) -> float | None:
+            return self._target_temp
+
+    @property
+    def extra_restore_state_data(self) -> RestoredExtraData:
+        # The last active mode is not part of the visible state while the
+        # unit is off, yet turn_on needs it: without it, the first turn_on
+        # after a restart would switch a heating unit to cooling.
+        return RestoredExtraData(
+            {ATTR_LAST_ACTIVE_MODE: self._last_active_mode.value})
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if (last_state := await self.async_get_last_state()) is not None:
+            extra = await self.async_get_last_extra_data()
+            self._restore(
+                last_state.state,
+                last_state.attributes,
+                extra.as_dict() if extra is not None else {},
+                self.hass.config.units.temperature_unit,
+            )
+
+    def _restore(
+        self,
+        state: str,
+        attributes: Mapping[str, Any],
+        extra: Mapping[str, Any],
+        system_unit: str,
+    ) -> None:
+        """Adopt a previously saved state, without transmitting anything.
+
+        Each value is taken only if this protocol can still express it --
+        the entry may have been switched to a protocol with other modes or
+        another temperature range -- and is otherwise left at its default.
+        """
+        modes = {mode.value: mode for mode in self._attr_hvac_modes}
+        if (mode := modes.get(state)) is not None:
+            self._attr_hvac_mode = mode
+        if (active := modes.get(extra.get(ATTR_LAST_ACTIVE_MODE))) is not None:
+            if active != HVACMode.OFF:
+                self._last_active_mode = active
+        elif mode is not None and mode != HVACMode.OFF:
+            self._last_active_mode = mode
+
+        if (temp := self._restored_temperature(
+                attributes.get(ATTR_TEMPERATURE), system_unit)) is not None:
+            self._target_temp = temp
+        if self._attr_fan_modes and attributes.get("fan_mode") in self._attr_fan_modes:
+            self._attr_fan_mode = attributes["fan_mode"]
+        if (self._attr_swing_modes
+                and attributes.get("swing_mode") in self._attr_swing_modes):
+            self._attr_swing_mode = attributes["swing_mode"]
+
+    def _restored_temperature(self, value: Any, system_unit: str) -> int | None:
+        """The saved target in °C, or None if it is unusable here.
+
+        State attributes are written in the system unit, so a Fahrenheit
+        install stored 72 for 22 °C.
+        """
+        try:
+            celsius = TemperatureConverter.convert(
+                float(value), system_unit, UnitOfTemperature.CELSIUS)
+        except (TypeError, ValueError, OverflowError):
+            return None
+        if not math.isfinite(celsius):
+            return None
+        temp = round(celsius)
+        if not self._attr_min_temp <= temp <= self._attr_max_temp:
+            return None
+        return temp
 
     @property
     def device_info(self):
@@ -119,7 +225,7 @@ class IRBridgeClimate(ClimateEntity):
 
     async def async_set_temperature(self, **kwargs) -> None:
         if (temp := kwargs.get(ATTR_TEMPERATURE)) is not None:
-            self._attr_target_temperature = int(temp)
+            self._target_temp = int(temp)
         await self._send_current_state()
         self.async_write_ha_state()
 
@@ -138,7 +244,7 @@ class IRBridgeClimate(ClimateEntity):
     async def _send_current_state(self) -> None:
         raw = self._generator.generate(
             hvac_mode=_HA_TO_INTERNAL[self._attr_hvac_mode],
-            temp=self._attr_target_temperature or 22,
+            temp=self._target_temp or DEFAULT_TEMP,
             fan_mode=self._attr_fan_mode or "auto",
             swing_mode=self._attr_swing_mode or "off",
         )
